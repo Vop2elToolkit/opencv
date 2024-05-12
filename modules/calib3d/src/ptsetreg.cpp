@@ -163,6 +163,7 @@ public:
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
         Mat err, mask, model, bestModel, ms1, ms2;
 
+        Mat allInliers;
         int iter, niters = MAX(maxIters, 1);
         int d1 = m1.channels() > 1 ? m1.channels() : m1.cols;
         int d2 = m2.channels() > 1 ? m2.channels() : m2.cols;
@@ -227,6 +228,11 @@ public:
 
                 if( goodCount > MAX(maxGoodCount, modelPoints-1) )
                 {
+                    if (allInliers.size() == cv::Size(0, 0))
+                        allInliers = mask;
+                    else
+                        cv::hconcat(allInliers, mask, allInliers);
+
                     std::swap(mask, bestMask);
                     model_i.copyTo(bestModel);
                     maxGoodCount = goodCount;
@@ -240,7 +246,11 @@ public:
             if( bestMask.data != bestMask0.data )
             {
                 if( bestMask.size() == bestMask0.size() )
-                    bestMask.copyTo(bestMask0);
+                {
+                    cv::hconcat(allInliers, bestMask.clone(), allInliers);
+                    _mask.create(allInliers.size(), CV_8U);
+                    allInliers.copyTo(_mask.getMat());
+                }
                 else
                     transpose(bestMask, bestMask0);
             }
